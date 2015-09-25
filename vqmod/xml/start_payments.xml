@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+    <id>Start Payment Gateway Extension</id>
+    <version>2.0.0.x and above</version>
+    <vqmver required="true">2.5.0</vqmver>
+    <author>Manish Gautam</author>
+	
+    <file name="catalog/view/theme/default/template/checkout/checkout.tpl">
+        <operation error="skip">
+            <search position="after"><![CDATA[<?php echo $header; ?>]]></search>
+            <add><![CDATA[<script src="https://beautiful.start.payfort.com/checkout.js"></script>]]></add>
+        </operation>
+        <operation error="skip">
+            <search position="before" offset="1"><![CDATA[<?php echo $footer; ?>]]></search>
+            <add><![CDATA[function submitFormWithToken(param){
+    removePaymentToken();
+    $('input[name="payment_method"][value="start_payments"]').parent().append("<span class='start_response'><br>Your Card: xxxx-xxxx-xxxx-<b>"+param.token.card.last4+"</b> <a href='javscript:void(0)' onclick=removePaymentToken();>(Clear)</a></span>");
+    $('input[name="payment_method"][value="start_payments"]').parent().find(".start_response").append("<input type = 'hidden' name='payment_token' value = "+param.token.id+"><input type = 'hidden' name='payment_email' value = "+param.email+">");
+}
+function removePaymentToken(){
+$('input[name="payment_method"][value="start_payments"]').parent().find(".start_response").remove();
+}]]></add>
+        </operation>
+                   
+        <operation error="skip">
+            <search position="after" offset="1"><![CDATA[$('#collapse-payment-method .panel-body').prepend('<div class="alert alert-warning">' + json['error']['warning'] + '<button type="button" class="close" data-dismiss="alert">&times;</button></div>');]]></search>
+            <add><![CDATA[ } else if (json['start_payment'] && $(".start_response").length ==0) {
+                StartCheckout.config({
+                    key: '<?php echo $white_open_api; ?>',
+                    complete: function(params) {
+                      submitFormWithToken(params);
+                    }
+                  });
+                  StartCheckout.open({
+                    amount:   '<?php echo $amount; ?>', 
+                    currency: '<?php echo $currency; ?>'
+            }); ]]></add>
+        </operation>
+    </file>
+    <file name="catalog/controller/checkout/payment_method.php">
+        <operation error="skip">
+            <search position="before"><![CDATA[$this->response->addHeader('Content-Type: application/json');]]></search>
+            <add><![CDATA[if($this->session->data['payment_method']['code'] == "start_payments"){
+                    $json['start_payment'] = 1;
+                }]]></add>
+        </operation>
+    </file>
+    <file name="catalog/controller/checkout/checkout.php">
+        <operation error="skip">
+            <search position="before"><![CDATA[if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/checkout/checkout.tpl')) {]]></search>
+            <add><![CDATA[
+            if ($this->config->get('start_payments_test')) {
+            if ($this->config->get('start_payments_test')) {
+                $white_open_api = $this->config->get('start_payments_entry_test_open_key');
+            } else {
+                $white_open_api = $this->config->get('start_payments_entry_live_open_key');
+            }
+            $data['white_open_api'] = $white_open_api;
+            $total = 0;
+			$taxes = $this->cart->getTaxes();
+
+			$this->load->model('extension/extension');
+
+			$sort_order = array();
+
+			$results = $this->model_extension_extension->getExtensions('total');
+
+			foreach ($results as $key => $value) {
+				$sort_order[$key] = $this->config->get($value['code'] . '_sort_order');
+			}
+
+			array_multisort($sort_order, SORT_ASC, $results);
+
+			foreach ($results as $result) {
+				if ($this->config->get($result['code'] . '_status')) {
+					$this->load->model('total/' . $result['code']);
+
+					$this->{'model_total_' . $result['code']}->getTotal($order_data['totals'], $total, $taxes);
+				}
+			}
+            $data['amount'] = $total * 100;
+            $data['currency'] = $this->currency->getCode();
+        }
+]]></add>
+        </operation>
+    </file>
+
+</modification>
