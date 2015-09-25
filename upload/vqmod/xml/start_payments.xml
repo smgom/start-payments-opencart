@@ -3,7 +3,7 @@
     <id>Start Payment Gateway Extension</id>
     <version>2.0.0.x and above</version>
     <vqmver required="true">2.5.0</vqmver>
-    <author>Manish Gautam</author>
+    <author>Manish</author>
 	
     <file name="catalog/view/theme/default/template/checkout/checkout.tpl">
         <operation error="skip">
@@ -56,7 +56,7 @@ $('input[name="payment_method"][value="start_payments"]').parent().find(".start_
                 $white_open_api = $this->config->get('start_payments_entry_live_open_key');
             }
             $data['white_open_api'] = $white_open_api;
-            $total = 0;
+             $total = 0;
 			$taxes = $this->cart->getTaxes();
 
 			$this->load->model('extension/extension');
@@ -78,7 +78,8 @@ $('input[name="payment_method"][value="start_payments"]').parent().find(".start_
 					$this->{'model_total_' . $result['code']}->getTotal($order_data['totals'], $total, $taxes);
 				}
 			}
-            $data['amount'] = $total * 100;
+                        $total_key = count($order_data['totals']) - 1;
+            $data['amount'] = $order_data['totals'][$total_key]['value'] * 100;
             $data['currency'] = $this->currency->getCode();
         }
 ]]></add>
