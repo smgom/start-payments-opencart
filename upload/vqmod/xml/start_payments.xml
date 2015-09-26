@@ -16,6 +16,7 @@
     removePaymentToken();
     $('input[name="payment_method"][value="start_payments"]').parent().append("<span class='start_response'><br>Your Card: xxxx-xxxx-xxxx-<b>"+param.token.card.last4+"</b> <a href='javscript:void(0)' onclick=removePaymentToken();>(Clear)</a></span>");
     $('input[name="payment_method"][value="start_payments"]').parent().find(".start_response").append("<input type = 'hidden' name='payment_token' value = "+param.token.id+"><input type = 'hidden' name='payment_email' value = "+param.email+">");
+    $('#button-payment-method').trigger('click');
 }
 function removePaymentToken(){
 $('input[name="payment_method"][value="start_payments"]').parent().find(".start_response").remove();
@@ -33,7 +34,8 @@ $('input[name="payment_method"][value="start_payments"]').parent().find(".start_
                   });
                   StartCheckout.open({
                     amount:   '<?php echo $amount; ?>', 
-                    currency: '<?php echo $currency; ?>'
+                    currency: '<?php echo $currency; ?>',
+                    email:'<?php echo $email; ?>'
             }); ]]></add>
         </operation>
     </file>
@@ -79,8 +81,13 @@ $('input[name="payment_method"][value="start_payments"]').parent().find(".start_
 				}
 			}
                         $total_key = count($order_data['totals']) - 1;
-            $data['amount'] = $order_data['totals'][$total_key]['value'] * 100;
-            $data['currency'] = $this->currency->getCode();
+                        $data['amount'] = $order_data['totals'][$total_key]['value'] * 100;
+                        $data['currency'] = $this->currency->getCode();
+             if(isset($this->session->data['customer_id'])){
+                    $data['email'] = $this->customer->getEmail();
+                }else{
+                    $data['email'] = $this->session->data['guest']['email'];
+                }
         }
 ]]></add>
         </operation>
