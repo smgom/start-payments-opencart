@@ -14,7 +14,7 @@
             <search position="before" offset="1"><![CDATA[<?php echo $footer; ?>]]></search>
             <add><![CDATA[function submitFormWithToken(param){
     removePaymentToken();
-    $('input[name="payment_method"][value="start_payments"]').parent().append("<span class='start_response'><br>Your Card: xxxx-xxxx-xxxx-<b>"+param.token.card.last4+"</b> <a href='javscript:void(0)' onclick=removePaymentToken();>(Clear)</a></span>");
+    $('input[name="payment_method"][value="start_payments"]').parent().append("<span class='start_response'><br>Your Card: xxxx-xxxx-xxxx-<b>"+param.token.card.last4+"</b> <a href='javascript:void(0)' onclick=removePaymentToken();>(Clear)</a></span>");
     $('input[name="payment_method"][value="start_payments"]').parent().find(".start_response").append("<input type = 'hidden' name='payment_token' value = "+param.token.id+"><input type = 'hidden' name='payment_email' value = "+param.email+">");
     $('#button-payment-method').trigger('click');
 }
@@ -27,37 +27,29 @@ $('input[name="payment_method"][value="start_payments"]').parent().find(".start_
             <search position="after" offset="1"><![CDATA[$('#collapse-payment-method .panel-body').prepend('<div class="alert alert-warning">' + json['error']['warning'] + '<button type="button" class="close" data-dismiss="alert">&times;</button></div>');]]></search>
             <add><![CDATA[ } else if (json['start_payment'] && $(".start_response").length ==0) {
                 StartCheckout.config({
-                    key: '<?php echo $white_open_api; ?>',
+                    key: json['white_open_api'],
                     complete: function(params) {
                       submitFormWithToken(params);
                     }
                   });
                   StartCheckout.open({
-                    amount:   '<?php echo $amount; ?>', 
-                    currency: '<?php echo $currency; ?>',
-                    email:'<?php echo $email; ?>'
+                    amount:   json['amount'], 
+                    currency: json['currency'],
+                    email: json['email']
             }); ]]></add>
         </operation>
     </file>
     <file name="catalog/controller/checkout/payment_method.php">
         <operation error="skip">
             <search position="before"><![CDATA[$this->response->addHeader('Content-Type: application/json');]]></search>
-            <add><![CDATA[if($this->session->data['payment_method']['code'] == "start_payments"){
+            <add><![CDATA[if(isset($this->session->data['payment_method']['code']) && $this->session->data['payment_method']['code'] == "start_payments"){
                     $json['start_payment'] = 1;
-                }]]></add>
-        </operation>
-    </file>
-    <file name="catalog/controller/checkout/checkout.php">
-        <operation error="skip">
-            <search position="before"><![CDATA[if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/checkout/checkout.tpl')) {]]></search>
-            <add><![CDATA[
-            if ($this->config->get('start_payments_test')) {
-            if ($this->config->get('start_payments_test')) {
+                if ($this->config->get('start_payments_test')) {
                 $white_open_api = $this->config->get('start_payments_entry_test_open_key');
             } else {
                 $white_open_api = $this->config->get('start_payments_entry_live_open_key');
             }
-            $data['white_open_api'] = $white_open_api;
+            $json['white_open_api'] = $white_open_api;
              $total = 0;
 			$taxes = $this->cart->getTaxes();
 
@@ -81,16 +73,21 @@ $('input[name="payment_method"][value="start_payments"]').parent().find(".start_
 				}
 			}
                         $total_key = count($order_data['totals']) - 1;
-                        $data['amount'] = $order_data['totals'][$total_key]['value'] * 100;
-                        $data['currency'] = $this->currency->getCode();
+                        $json['amount'] = $order_data['totals'][$total_key]['value'] * 100;
+                        $json['currency'] = $this->currency->getCode();
              if(isset($this->session->data['customer_id'])){
-                    $data['email'] = $this->customer->getEmail();
+                    $json['email'] = $this->customer->getEmail();
                 }else{
-                    $data['email'] = $this->session->data['guest']['email'];
-                }
-        }
-]]></add>
+		   if(isset($this->session->data['guest'])){
+                         $json['email'] = $this->session->data['guest']['email'];
+                    }else{
+		         $json["email"] = "";
+		   }
+		}
+                }]]></add>
         </operation>
+        
+         
     </file>
-
 </modification>
+
